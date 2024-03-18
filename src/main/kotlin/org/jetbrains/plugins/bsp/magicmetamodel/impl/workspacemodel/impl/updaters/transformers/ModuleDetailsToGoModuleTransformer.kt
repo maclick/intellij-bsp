@@ -1,10 +1,15 @@
-package org.jetbrains.magicmetamodel.impl.workspacemodel.impl.updaters.transformers
+package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.updaters.transformers
 
-import org.jetbrains.bsp.utils.extractGoBuildTarget
-import org.jetbrains.magicmetamodel.ModuleNameProvider
-import org.jetbrains.magicmetamodel.ProjectDetails
-import org.jetbrains.magicmetamodel.impl.workspacemodel.*
-import org.jetbrains.magicmetamodel.impl.workspacemodel.ModuleDetails
+import org.jetbrains.bsp.protocol.utils.extractGoBuildTarget
+import org.jetbrains.plugins.bsp.magicmetamodel.ModuleNameProvider
+import org.jetbrains.plugins.bsp.magicmetamodel.ProjectDetails
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericModuleInfo
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GoModule
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GoModuleDependency
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ModuleDetails
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.toBsp4JTargetIdentifier
 import java.net.URI
 import kotlin.io.path.toPath
 
