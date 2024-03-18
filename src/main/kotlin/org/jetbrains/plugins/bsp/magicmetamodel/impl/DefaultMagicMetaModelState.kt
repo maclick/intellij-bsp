@@ -2,28 +2,9 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl
 
 import org.jetbrains.bsp.protocol.AndroidTargetType
 import org.jetbrains.plugins.bsp.magicmetamodel.MagicMetaModelTemporaryFacadeState
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.AndroidAddendum
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ContentRoot
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericModuleInfo
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericSourceRoot
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.IntermediateLibraryDependency
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.IntermediateModuleDependency
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaAddendum
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaModule
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaSourceRoot
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.KotlinAddendum
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.Library
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.Module
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ModuleCapabilities
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonLibrary
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonModule
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonSdkInfo
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ResourceRoot
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ScalaAddendum
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.includesPython
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.*
 import java.net.URI
+import java.nio.file.Path
 import kotlin.io.path.Path
 
 // TODO, we can do it better, but for now it should be good enough:
@@ -200,6 +181,7 @@ public data class ModuleState(
   var scalaAddendum: ScalaAddendumState? = null,
   var javaAddendum: JavaAddendumState? = null,
   var androidAddendum: AndroidAddendumState? = null,
+  var goAddendum : GoAddendumState? = null,
 ) : ConvertableFromState<Module> {
   public fun toJavaModule(): JavaModule = JavaModule(
     genericModuleInfo = module.fromState(),
@@ -286,6 +268,18 @@ public data class AndroidAddendumState(
   )
 }
 
+public data class GoAddendumState(
+  var importPath: String? = null,
+  var root: Path? = null,
+  var goDependencies: List<GoModuleDependency> = emptyList(),
+) : ConvertableFromState<GoAddendum> {
+  override fun fromState(): GoAddendum = GoAddendum(
+    importPath = importPath,
+    root = root,
+    goDependencies = goDependencies,
+  )
+}
+
 public data class ModuleCapabilitiesState(
   var canRun: Boolean = false,
   var canTest: Boolean = false,
@@ -315,6 +309,12 @@ public fun AndroidAddendum.toState(): AndroidAddendumState = AndroidAddendumStat
   androidTargetType = androidTargetType,
   manifest = manifest?.toString(),
   resourceFolders = resourceFolders.map { it.toString() },
+)
+
+public fun GoAddendum.toState() : GoAddendumState = GoAddendumState(
+  importPath = importPath,
+  root = root,
+  goDependencies = goDependencies,
 )
 
 public fun ModuleCapabilities.toState(): ModuleCapabilitiesState = ModuleCapabilitiesState(
