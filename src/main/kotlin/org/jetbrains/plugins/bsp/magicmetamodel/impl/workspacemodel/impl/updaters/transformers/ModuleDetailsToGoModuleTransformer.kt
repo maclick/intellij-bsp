@@ -13,6 +13,8 @@ import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.toBsp4JTarge
 import java.net.URI
 import kotlin.io.path.toPath
 
+private const val NO_IMPORT_PATH = "No importPath for module"
+
 internal class ModuleDetailsToGoModuleTransformer(
   private val targetsMap: Map<BuildTargetId, BuildTargetInfo>,
   private val projectDetails: ProjectDetails,
@@ -23,10 +25,9 @@ internal class ModuleDetailsToGoModuleTransformer(
   override fun transform(inputEntity: ModuleDetails): GoModule {
     val goBuildInfo = extractGoBuildTarget(inputEntity.target) ?: error("Transform error, cannot extract GoBuildTarget")
 
-    // TODO: replace importPath: String? in GoBuildTarget since Vgo modules require String
     return GoModule(
       module = toGenericModuleInfo(inputEntity),
-      importPath = goBuildInfo.importPath ?: "No importPath for GoModule",
+      importPath = goBuildInfo.importPath ?: NO_IMPORT_PATH,
       root = URI.create(inputEntity.target.baseDirectory).toPath(),
       goDependencies = toGoDependencies(inputEntity)
     )
@@ -52,7 +53,7 @@ internal class ModuleDetailsToGoModuleTransformer(
         ?: return@mapNotNull null
       val dependencyGoBuildInfo = extractGoBuildTarget(buildTarget) ?: return@mapNotNull null
         GoModuleDependency(
-          importPath = dependencyGoBuildInfo.importPath ?: "No importPath for GoModuleDependency",
+          importPath = dependencyGoBuildInfo.importPath ?: NO_IMPORT_PATH,
           root = URI.create(buildTarget.baseDirectory).toPath()
         )
     }
