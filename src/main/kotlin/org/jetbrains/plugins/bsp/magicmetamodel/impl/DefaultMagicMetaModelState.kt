@@ -2,7 +2,30 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl
 
 import org.jetbrains.bsp.protocol.AndroidTargetType
 import org.jetbrains.plugins.bsp.magicmetamodel.MagicMetaModelTemporaryFacadeState
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.*
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.AndroidAddendum
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ContentRoot
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericModuleInfo
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericSourceRoot
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GoAddendum
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GoModule
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GoModuleDependency
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.IntermediateLibraryDependency
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.IntermediateModuleDependency
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaAddendum
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaModule
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaSourceRoot
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.KotlinAddendum
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.Library
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.Module
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ModuleCapabilities
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonLibrary
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonModule
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonSdkInfo
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ResourceRoot
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ScalaAddendum
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.includesPython
 import java.net.URI
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -201,6 +224,13 @@ public data class ModuleState(
     libraries = libraries?.map { it.toPythonLibrary() }.orEmpty(),
     resourceRoots = resourceRoots.map { it.toResourceRoot() },
     sdkInfo = sdkInfo?.fromState(),
+  )
+
+  public fun toGoModule(): GoModule = GoModule(
+    module = module.fromState(),
+    importPath = goAddendum?.importPath ?: "",
+    root = goAddendum?.root ?: Path(""),
+    goDependencies = goAddendum?.goDependencies ?: emptyList(),
   )
 
   override fun fromState(): Module =
