@@ -10,6 +10,7 @@ internal class GoModuleUpdater(
   private val workspaceModelEntityUpdaterConfig: WorkspaceModelEntityUpdaterConfig,
 ) : WorkspaceModelEntityWithoutParentModuleUpdater<GoModule, VgoStandaloneModuleEntity> {
   override fun addEntity(entityToAdd: GoModule): VgoStandaloneModuleEntity {
+//    TODO: tutaj trzeba bedzie jeszcze dolozyc goModuleWithoutSourcesUpdater no i withSources
     val moduleEntityUpdater = ModuleEntityUpdater(workspaceModelEntityUpdaterConfig)
     val moduleEntity = moduleEntityUpdater.addEntity(entityToAdd.module)
 
@@ -33,6 +34,11 @@ internal class GoModuleUpdater(
       }
       workspaceModelEntityUpdaterConfig.workspaceEntityStorageBuilder.addEntity(vgoModuleDeps)
     }
+
+    val sourceEntityUpdater = SourceEntityUpdater(workspaceModelEntityUpdaterConfig)
+    sourceEntityUpdater.addEntries(entityToAdd.sourceRoots, moduleEntity)
+
+    //    TODO: resources
 
     return builtVgoModule
   }
