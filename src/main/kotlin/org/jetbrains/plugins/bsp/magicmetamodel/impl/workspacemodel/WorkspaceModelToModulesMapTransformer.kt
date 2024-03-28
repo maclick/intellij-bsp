@@ -15,7 +15,6 @@ import com.intellij.platform.workspace.jps.entities.SdkDependency
 import com.intellij.platform.workspace.jps.entities.SourceRootEntity
 import com.intellij.platform.workspace.jps.entities.customImlData
 import com.intellij.workspaceModel.ide.toPath
-import org.jetbrains.bsp.GoBuildTarget
 import org.jetbrains.bsp.protocol.AndroidTargetType
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.compilerRunner.toArgumentStrings
@@ -105,15 +104,7 @@ public object WorkspaceModelToModulesMapTransformer {
           libraries = libraries.map { PythonLibrary(it.sourceJars) }.toList(),
           sdkInfo = entity.getPythonSdk(),
         )
-//      } else if (genericModuleInfo.languageIds.includesGo()){
-//        GoModule(
-//          module = genericModuleInfo,
-//          sourceRoots = sources.map { it.toGenericSourceRoot() },
-//          resourceRoots = sources.map { it.toResourceRoot() }.flatten(),
-//          importPath = //TODO: get import path
-//          root = entity.getBaseDir()?.path ?: Path(""),
-//          goDependencies =  //TODO: get go dependencies
-//        )
+      // TODO: add support for Go
       } else{
         val baseDirContentRoot = entity.getBaseDir()
         JavaModule(

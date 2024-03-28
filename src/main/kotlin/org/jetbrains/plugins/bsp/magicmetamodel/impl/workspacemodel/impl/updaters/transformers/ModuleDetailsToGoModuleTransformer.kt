@@ -20,6 +20,8 @@ internal class ModuleDetailsToGoModuleTransformer(
   override val type = "GO_MODULE"
 
   private val sourcesItemToGoSourceRootTransformer = SourcesItemToGoSourceRootTransformer(projectBasePath)
+  private val resourcesItemToGoResourceRootTransformer =
+    ResourcesItemToGoResourceRootTransformer(projectBasePath)
 
   override fun transform(inputEntity: ModuleDetails): GoModule{
     val goBuildInfo = extractGoBuildTarget(inputEntity.target) ?: error("Transform error, cannot extract GoBuildTarget")
@@ -32,7 +34,7 @@ internal class ModuleDetailsToGoModuleTransformer(
           it,
         )
       }),
-      resourceRoots = emptyList(), //TODO
+      resourceRoots = resourcesItemToGoResourceRootTransformer.transform(inputEntity.resources),
       importPath = goBuildInfo.importPath,
       root = URI.create(inputEntity.target.baseDirectory).toPath(),
       goDependencies = toGoDependencies(inputEntity)
@@ -69,44 +71,4 @@ internal class ModuleDetailsToGoModuleTransformer(
         root = URI.create(buildTarget.baseDirectory).toPath()
       )
     }
-}
-
-internal class SourcesItemToGoSourceRootTransformer(private val projectBasePath: Path) :
-  WorkspaceModelEntityPartitionTransformer<BuildTargetAndSourceItem, GenericSourceRoot> {
-  private val sourceRootType = "go-source"
-  private val testSourceRootType = "go-test"
-
-  override fun transform(inputEntities: List<BuildTargetAndSourceItem>): List<GenericSourceRoot> {
-    val allSourceRoots = super.transform(inputEntities)
-
-    return allSourceRoots.filter { isNotAChildOfAnySourceDir(it, allSourceRoots) }
-  }
-
-  private fun isNotAChildOfAnySourceDir(
-    sourceRoot: GenericSourceRoot,
-    allSourceRoots: List<GenericSourceRoot>,
-  ): Boolean =
-    allSourceRoots.none { sourceRoot.sourcePath.parent.startsWith(it.sourcePath) }
-
-  override fun transform(inputEntity: BuildTargetAndSourceItem): List<GenericSourceRoot> {
-    val rootType = inferRootType(inputEntity.buildTarget)
-
-    return SourceItemToSourceRootTransformer
-      .transform(inputEntity.sourcesItem.sources)
-      .map { toGoSourceRoot(it, rootType) }
-      .filter { it.sourcePath.isPathInProjectBasePath(projectBasePath) }
-  }
-
-  private fun inferRootType(buildTarget: BuildTarget): String =
-    if (buildTarget.tags.contains("test")) testSourceRootType else sourceRootType
-
-  private fun toGoSourceRoot(
-    sourceRoot: SourceRoot,
-    rootType: String,
-  ): GenericSourceRoot {
-    return GenericSourceRoot(
-      sourcePath = sourceRoot.sourcePath,
-      rootType = rootType,
-    )
-  }
 }
