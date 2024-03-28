@@ -17,7 +17,7 @@ internal class ModuleDetailsToGoModuleTransformer(
   moduleNameProvider: ModuleNameProvider,
   projectBasePath: Path,
 ) : ModuleDetailsToModuleTransformer<GoModule>(targetsMap, moduleNameProvider) {
-  override val type = "GO_MODULE"
+  override val type = "WEB_MODULE"
 
   private val sourcesItemToGoSourceRootTransformer = SourcesItemToGoSourceRootTransformer(projectBasePath)
   private val resourcesItemToGoResourceRootTransformer =
