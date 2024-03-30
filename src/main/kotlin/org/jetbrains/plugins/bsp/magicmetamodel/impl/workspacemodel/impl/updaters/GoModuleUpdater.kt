@@ -1,39 +1,29 @@
 package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.updaters
 
-import com.goide.vgo.project.workspaceModel.entities.VgoDependencyEntity
-import com.goide.vgo.project.workspaceModel.entities.VgoStandaloneModuleEntity
-import com.intellij.platform.workspace.storage.impl.url.toVirtualFileUrl
+import com.intellij.platform.workspace.storage.WorkspaceEntity
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GoModule
-import org.jetbrains.workspacemodel.entities.BspEntitySource
 
 internal class GoModuleUpdater(
   private val workspaceModelEntityUpdaterConfig: WorkspaceModelEntityUpdaterConfig,
-) : WorkspaceModelEntityWithoutParentModuleUpdater<GoModule, VgoStandaloneModuleEntity> {
-  override fun addEntity(entityToAdd: GoModule): VgoStandaloneModuleEntity {
+) : WorkspaceModelEntityWithoutParentModuleUpdater<GoModule, WorkspaceEntity> {
+  override fun addEntity(entityToAdd: GoModule): WorkspaceEntity {
+    if (!goEntitiesExtensionExists()) {
+      error("Go entities extension does not exist.")
+    }
+    val goEntitiesExtension = goEntitiesExtension()!!
+
     val moduleEntityUpdater = ModuleEntityUpdater(workspaceModelEntityUpdaterConfig)
     val moduleEntity = moduleEntityUpdater.addEntity(entityToAdd.module)
 
-    val vgoModule = VgoStandaloneModuleEntity(
-      moduleId = moduleEntity.symbolicId,
-      entitySource = BspEntitySource,
-      importPath = entityToAdd.importPath,
-      root = entityToAdd.root.toVirtualFileUrl(workspaceModelEntityUpdaterConfig.virtualFileUrlManager),
+    val goModuleEntities = goEntitiesExtension.prepareAllEntitiesForGoModule(
+      entityToAdd,
+      moduleEntity,
+      workspaceModelEntityUpdaterConfig.virtualFileUrlManager,
     )
-    val builtVgoModule = workspaceModelEntityUpdaterConfig.workspaceEntityStorageBuilder.addEntity(vgoModule)
 
-    entityToAdd.goDependencies.forEach {
-      val vgoModuleDeps = VgoDependencyEntity(
-        importPath = it.importPath,
-        entitySource = BspEntitySource,
-        isMainModule = false,
-        internal = true,
-      ) {
-        this.module = vgoModule
-        this.root = it.root.toVirtualFileUrl(workspaceModelEntityUpdaterConfig.virtualFileUrlManager)
-      }
-      workspaceModelEntityUpdaterConfig.workspaceEntityStorageBuilder.addEntity(vgoModuleDeps)
+    goModuleEntities.goDependenciesWorkspaceEntity.forEach {
+      workspaceModelEntityUpdaterConfig.workspaceEntityStorageBuilder.addEntity(it)
     }
-
-    return builtVgoModule
+    return goModuleEntities.goModuleWorkspaceEntity
   }
 }
