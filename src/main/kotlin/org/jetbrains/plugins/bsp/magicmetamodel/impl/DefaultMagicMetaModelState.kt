@@ -227,16 +227,19 @@ public data class ModuleState(
     sdkInfo = sdkInfo?.fromState(),
   )
 
-  public fun toGoModule(): GoModule = GoModule(
-    module = module.fromState(),
-    importPath = goAddendum?.importPath ?: "",
-    root = goAddendum?.root ?: Path(""),
-    goDependencies = goAddendum?.goDependencies ?: emptyList(),
-  )
+  public fun toGoModule(): GoModule =
+    GoModule(
+      module = module.fromState(),
+      importPath = goAddendum?.importPath ?: "",
+      root = Path(goAddendum?.root ?: ""),
+      goDependencies = goAddendum?.goDependencies?.map { it.fromState() }.orEmpty()
+    )
 
   override fun fromState(): Module =
     if (module.languageIds.includesPython())
       toPythonModule()
+    else if (module.languageIds.contains("go"))
+      toGoModule()
     else
       toJavaModule()
 }
@@ -301,12 +304,12 @@ public data class AndroidAddendumState(
 
 public data class GoAddendumState(
   var importPath: String? = null,
-  var root: Path? = null,
-  var goDependencies: List<GoModuleDependency> = emptyList(),
+  var root: String? = null,
+  var goDependencies: List<GoModuleDependencyState> = emptyList(),
 ) : ConvertableFromState<GoAddendum> {
   override fun fromState(): GoAddendum = GoAddendum(
     importPath = importPath,
-    root = root,
+    root = Path(root),
     goDependencies = goDependencies,
   )
 }
