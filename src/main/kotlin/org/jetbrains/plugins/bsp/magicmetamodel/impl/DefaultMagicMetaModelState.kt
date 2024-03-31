@@ -303,14 +303,24 @@ public data class AndroidAddendumState(
 }
 
 public data class GoAddendumState(
-  var importPath: String? = null,
-  var root: String? = null,
+  var importPath: String = "",
+  var root: String = "",
   var goDependencies: List<GoModuleDependencyState> = emptyList(),
 ) : ConvertableFromState<GoAddendum> {
   override fun fromState(): GoAddendum = GoAddendum(
     importPath = importPath,
     root = Path(root),
-    goDependencies = goDependencies,
+    goDependencies = goDependencies.map { it.fromState() },
+  )
+}
+
+public data class GoModuleDependencyState(
+  var importPath: String = "",
+  var root: String = "",
+) : ConvertableFromState<GoModuleDependency> {
+  override fun fromState(): GoModuleDependency = GoModuleDependency(
+    importPath = importPath,
+    root = Path(root),
   )
 }
 
@@ -347,8 +357,13 @@ public fun AndroidAddendum.toState(): AndroidAddendumState = AndroidAddendumStat
 
 public fun GoAddendum.toState(): GoAddendumState = GoAddendumState(
   importPath = importPath,
-  root = root,
-  goDependencies = goDependencies,
+  root = root.toString(),
+  goDependencies = goDependencies.map { it.toState() },
+)
+
+public fun GoModuleDependency.toState(): GoModuleDependencyState = GoModuleDependencyState(
+  importPath = importPath,
+  root = root.toString(),
 )
 
 public fun ModuleCapabilities.toState(): ModuleCapabilitiesState = ModuleCapabilitiesState(

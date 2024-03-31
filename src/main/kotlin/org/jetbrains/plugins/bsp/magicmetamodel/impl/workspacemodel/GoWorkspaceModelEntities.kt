@@ -24,7 +24,7 @@ public data class GoModule(
 }
 
 public data class GoAddendum(
-  var importPath: String? = null,
-  var root: Path? = null,
+  var importPath: String,
+  var root: Path,
   val goDependencies: List<GoModuleDependency>,
 )
