@@ -205,7 +205,7 @@ public data class ModuleState(
   var androidAddendum: AndroidAddendumState? = null,
   var goAddendum: GoAddendumState? = null,
 ) : ConvertableFromState<Module> {
-  public fun toJavaModule(): JavaModule = JavaModule(
+  private fun toJavaModule(): JavaModule = JavaModule(
     genericModuleInfo = module.fromState(),
     baseDirContentRoot = baseDirContentRoot?.fromState(),
     sourceRoots = sourceRoots.map { it.toJavaSourceRoot() },
@@ -218,7 +218,7 @@ public data class ModuleState(
     androidAddendum = androidAddendum?.fromState(),
   )
 
-  public fun toPythonModule(): PythonModule = PythonModule(
+  private fun toPythonModule(): PythonModule = PythonModule(
     module = module.fromState(),
     sourceRoots = sourceRoots.map { it.toGenericSourceRoot() },
     libraries = libraries?.map { it.toPythonLibrary() }.orEmpty(),
@@ -226,11 +226,13 @@ public data class ModuleState(
     sdkInfo = sdkInfo?.fromState(),
   )
 
-  public fun toGoModule(): GoModule =
+  private fun toGoModule(): GoModule =
     GoModule(
       module = module.fromState(),
       importPath = goAddendum?.importPath ?: "",
       root = Path(goAddendum?.root ?: ""),
+      sourceRoots = sourceRoots.map { it.toGenericSourceRoot() },
+      resourceRoots = resourceRoots.map { it.toResourceRoot() },
       goDependencies = goAddendum?.goDependencies?.map { it.fromState() }.orEmpty()
     )
 
