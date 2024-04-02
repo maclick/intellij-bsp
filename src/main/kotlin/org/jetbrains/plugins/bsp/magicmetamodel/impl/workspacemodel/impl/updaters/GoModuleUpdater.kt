@@ -7,13 +7,20 @@ internal class GoModuleUpdater(
   private val workspaceModelEntityUpdaterConfig: WorkspaceModelEntityUpdaterConfig,
 ) : WorkspaceModelEntityWithoutParentModuleUpdater<GoModule, WorkspaceEntity> {
   override fun addEntity(entityToAdd: GoModule): WorkspaceEntity {
+    val moduleEntityUpdater = ModuleEntityUpdater(workspaceModelEntityUpdaterConfig)
+    val moduleEntity = moduleEntityUpdater.addEntity(entityToAdd.module)
+
+    val sourceEntityUpdater = SourceEntityUpdater(workspaceModelEntityUpdaterConfig)
+    sourceEntityUpdater.addEntries(entityToAdd.sourceRoots, moduleEntity)
+
+    val goResourceEntityUpdater = GoResourceEntityUpdater(workspaceModelEntityUpdaterConfig)
+    goResourceEntityUpdater.addEntries(entityToAdd.resourceRoots, moduleEntity)
+
+
     if (!goEntitiesExtensionExists()) {
       error("Go entities extension does not exist.")
     }
     val goEntitiesExtension = goEntitiesExtension()!!
-
-    val moduleEntityUpdater = ModuleEntityUpdater(workspaceModelEntityUpdaterConfig)
-    val moduleEntity = moduleEntityUpdater.addEntity(entityToAdd.module)
 
     val goModuleEntities = goEntitiesExtension.prepareAllEntitiesForGoModule(
       entityToAdd,
