@@ -3,9 +3,7 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel
 import org.jetbrains.bsp.protocol.AndroidTargetType
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.ModuleState
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.toState
-import org.jetbrains.plugins.bsp.services.MagicMetaModelService
 import java.nio.file.Path
-import com.intellij.openapi.module.Module as IdeaModule
 
 public data class JavaSourceRoot(
   val sourcePath: Path,
@@ -64,16 +62,7 @@ public data class AndroidAddendum(
   val androidSdkName: String,
   val androidTargetType: AndroidTargetType,
   val manifest: Path?,
-  val resourceFolders: List<Path>,
+  val resourceDirectories: List<Path>,
+  val resourceJavaPackage: String?,
+  val assetsDirectories: List<Path>,
 ) : WorkspaceModelEntity()
-
-public val IdeaModule.javaModule: JavaModule?
-  get() {
-    val magicMetaModel = MagicMetaModelService.getInstance(this.project).value
-    val module = magicMetaModel.getDetailsForTargetId(this.name)
-    if (module !is JavaModule) return null
-    return module
-  }
-
-public val IdeaModule.androidAddendum: AndroidAddendum?
-  get() = javaModule?.androidAddendum
