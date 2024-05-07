@@ -355,8 +355,6 @@ public class MagicMetaModelImpl : MagicMetaModel, ConvertableToState<DefaultMagi
 
   override fun getLibraries(): List<Library> = libraries.orEmpty()
 
-  override fun getDetailsForTargetId(targetId: BuildTargetId): Module? = facade.getModuleForTargetId(targetId)
-
   // TODO - test
   override fun toState(): DefaultMagicMetaModelState =
     DefaultMagicMetaModelState(
@@ -369,6 +367,7 @@ public class MagicMetaModelImpl : MagicMetaModel, ConvertableToState<DefaultMagi
 
   internal fun loadStorage(storage: TargetsStatusStorage) {
     targetsStatusStorage = storage
+    facade.loadStorage(storage)
   }
 
   public fun isPythonSupportEnabled(): Boolean = magicMetaModelProjectConfig.isPythonSupportEnabled

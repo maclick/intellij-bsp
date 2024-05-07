@@ -27,7 +27,6 @@ internal class SourcesItemToGoSourceRootTransformer(private val projectBasePath:
     return SourceItemToSourceRootTransformer
       .transform(inputEntity.sourcesItem.sources)
       .map { toGoSourceRoot(it, rootType) }
-      .filter { it.sourcePath.isPathInProjectBasePath(projectBasePath) }
   }
 
   private fun inferRootType(buildTarget: BuildTarget): String =

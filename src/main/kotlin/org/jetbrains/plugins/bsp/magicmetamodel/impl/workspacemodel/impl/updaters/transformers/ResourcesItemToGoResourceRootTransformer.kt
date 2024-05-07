@@ -9,7 +9,6 @@ internal class ResourcesItemToGoResourceRootTransformer(private val projectBaseP
   override fun transform(inputEntity: ResourcesItem): List<ResourceRoot> =
     inputEntity.resources
       .map(this::toResourceRoot)
-      .filter { it.resourcePath.isPathInProjectBasePath(projectBasePath) }
       .distinct()
 
   private fun toResourceRoot(resourcePath: String) =

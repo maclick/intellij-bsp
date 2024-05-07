@@ -3,8 +3,7 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.update
 import ch.epfl.scala.bsp4j.BuildTarget
 import ch.epfl.scala.bsp4j.ResourcesItem
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ResourceRoot
-import java.net.URI
-import java.nio.file.Path
+import org.jetbrains.plugins.bsp.utils.safeCastToURI
 import kotlin.io.path.toPath
 
 internal data class BuildTargetAndResourcesItem(
@@ -12,19 +11,18 @@ internal data class BuildTargetAndResourcesItem(
   val resourcesItem: ResourcesItem,
 )
 
-internal class ResourcesItemToJavaResourceRootTransformer(private val projectBasePath: Path) :
+internal class ResourcesItemToJavaResourceRootTransformer :
   WorkspaceModelEntityPartitionTransformer<BuildTargetAndResourcesItem, ResourceRoot> {
   override fun transform(inputEntity: BuildTargetAndResourcesItem): List<ResourceRoot> {
     val rootType = inputEntity.buildTarget.inferRootType()
     return inputEntity.resourcesItem.resources
       .map { toJavaResourceRoot(it, rootType) }
-      .filter { it.resourcePath.isPathInProjectBasePath(projectBasePath) }
       .distinct()
   }
 
   private fun toJavaResourceRoot(resourcePath: String, rootType: String) =
     ResourceRoot(
-      resourcePath = URI.create(resourcePath).toPath(),
+      resourcePath = resourcePath.safeCastToURI().toPath(),
       rootType = rootType,
     )
 
@@ -36,6 +34,3 @@ internal class ResourcesItemToJavaResourceRootTransformer(private val projectBas
     private const val JAVA_TEST_RESOURCE_ROOT_TYPE = "java-test-resource"
   }
 }
-
-internal fun Path.isPathInProjectBasePath(projectBasePath: Path) =
-  this.toAbsolutePath().startsWith(projectBasePath.toAbsolutePath())

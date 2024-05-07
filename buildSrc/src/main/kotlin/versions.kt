@@ -2,10 +2,10 @@
 // -> https://plugins.jetbrains.com/docs/intellij/intellij-artifacts.html
 object Plugin {
   const val group = "org.jetbrains"
-  const val name = "intellij-bsp"
+  const val name = "Build Server Protocol (BSP)"
   const val version = "2024.1.0-EAP"
 
-  // See https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html
+// See https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html
 // for insight into build numbers and IntelliJ Platform versions.
   const val sinceBuild = "241.14494.158"
   const val untilBuild = "241.*"
