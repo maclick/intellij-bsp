@@ -1,6 +1,10 @@
 package org.jetbrains.plugins.bsp.ui.gutters
 
 import ch.epfl.scala.bsp4j.TextDocumentIdentifier
+import com.goide.GoFileElement
+import com.goide.psi.GoFile
+import com.goide.psi.GoInternedLeafTokenType
+import com.goide.psi.impl.GoFunctionDeclarationImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DefaultActionGroup
@@ -9,6 +13,9 @@ import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiNameIdentifierOwner
+import com.intellij.psi.impl.source.tree.LeafPsiElement
+import org.jetbrains.kotlin.idea.codeinsight.utils.invertedComparison
+import org.jetbrains.kotlin.idea.util.CommentSaver.Companion.tokenType
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
@@ -19,7 +26,7 @@ import org.jetbrains.plugins.bsp.ui.widgets.tool.window.utils.fillWithEligibleAc
 
 private class BspLineMakerInfo(text: String, actions: List<AnAction>) :
   RunLineMarkerContributor.Info(null, actions.toTypedArray(), { text }) {
-  override fun shouldReplace(other: RunLineMarkerContributor.Info): Boolean = true
+  override fun shouldReplace(other: RunLineMarkerContributor.Info): Boolean = false
 }
 
 public class BspJVMRunLineMarkerContributor : RunLineMarkerContributor() {
@@ -30,8 +37,12 @@ public class BspJVMRunLineMarkerContributor : RunLineMarkerContributor() {
     else null
 
   private fun PsiElement.shouldAddMarker(): Boolean =
-    !isInsideJar() && getStrictParentOfType<PsiNameIdentifierOwner>()
-      ?.isClassOrMethod() ?: false
+    (!isInsideJar() && getStrictParentOfType<PsiNameIdentifierOwner>()
+      ?.isClassOrMethod() ?: false) || isGoTopLevelFunction()
+
+  private fun PsiElement.isGoTopLevelFunction() =
+    getStrictParentOfType<PsiNameIdentifierOwner>() is GoFunctionDeclarationImpl
+      && getStrictParentOfType<PsiNameIdentifierOwner>()?.parent is GoFile
 
   private fun PsiElement.isInsideJar() =
     containingFile.virtualFile?.url?.startsWith("jar://") ?: false
