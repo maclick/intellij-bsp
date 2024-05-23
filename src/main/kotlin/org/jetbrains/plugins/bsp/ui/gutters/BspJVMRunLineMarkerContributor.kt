@@ -26,7 +26,7 @@ import org.jetbrains.plugins.bsp.ui.widgets.tool.window.utils.fillWithEligibleAc
 
 private class BspLineMakerInfo(text: String, actions: List<AnAction>) :
   RunLineMarkerContributor.Info(null, actions.toTypedArray(), { text }) {
-  override fun shouldReplace(other: RunLineMarkerContributor.Info): Boolean = false
+  override fun shouldReplace(other: RunLineMarkerContributor.Info): Boolean = true
 }
 
 public class BspJVMRunLineMarkerContributor : RunLineMarkerContributor() {
