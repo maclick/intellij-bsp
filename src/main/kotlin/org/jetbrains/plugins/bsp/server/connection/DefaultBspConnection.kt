@@ -157,6 +157,7 @@ internal class DefaultBspConnection(
   }
 
   private fun BspConnectionDetails.connect(bspSyncConsole: TaskConsole, taskId: Any, errorCallback: () -> Unit) {
+    log.info("Connecting to server with connection details: $this")
     val client = createBspClient()
     val process = createAndStartProcessAndAddDisconnectActions(this)
 
@@ -174,9 +175,8 @@ internal class DefaultBspConnection(
     return BspClient(
       bspConsoleService.bspSyncConsole,
       bspConsoleService.bspBuildConsole,
-      bspConsoleService.bspRunConsole,
-      bspConsoleService.bspTestConsole,
       timeoutHandler,
+      project
     )
   }
 
@@ -317,7 +317,7 @@ internal class DefaultBspConnection(
     return params
   }
 
-  override fun <T> runWithServer(task: (server: BspServer, capabilities: BazelBuildServerCapabilities) -> T?): T? {
+  override fun <T> runWithServer(task: (server: BspServer, capabilities: BazelBuildServerCapabilities) -> T): T {
     val currentConnectionDetails =
       connectionDetailsProviderExtension.provideNewConnectionDetails(project, connectionDetails)
 

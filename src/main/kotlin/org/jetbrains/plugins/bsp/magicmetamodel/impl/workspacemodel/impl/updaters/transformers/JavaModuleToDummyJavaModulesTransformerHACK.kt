@@ -3,8 +3,11 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.update
 import com.intellij.openapi.module.ModuleTypeId
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ContentRoot
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericModuleInfo
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaAddendum
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaModule
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaSourceRoot
+import org.jetbrains.plugins.bsp.utils.replaceDots
+import org.jetbrains.plugins.bsp.utils.shortenTargetPath
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.Path
@@ -22,19 +25,25 @@ public class JavaModuleToDummyJavaModulesTransformerHACK(private val projectBase
   }
 
   override fun transform(inputEntity: JavaModule): List<JavaModule> {
-    val dummyJavaModuleSourceRoots = calculateDummyJavaSourceRoots(inputEntity)
+    val dummyJavaModuleSourceRoots = calculateDummyJavaSourceRoots(inputEntity.sourceRoots)
     val dummyJavaModuleNames = calculateDummyJavaModuleNames(dummyJavaModuleSourceRoots, projectBasePath)
     return dummyJavaModuleSourceRoots.zip(dummyJavaModuleNames)
       .mapNotNull {
         calculateDummyJavaSourceModule(
           name = it.second,
           sourceRoot = it.first,
-          jdkName = inputEntity.jvmJdkName
+          jdkName = inputEntity.jvmJdkName,
+          javaAddendum = inputEntity.javaAddendum,
         )
       }
   }
 
-  private fun calculateDummyJavaSourceModule(name: String, sourceRoot: Path, jdkName: String?) =
+  private fun calculateDummyJavaSourceModule(
+    name: String,
+    sourceRoot: Path,
+    jdkName: String?,
+    javaAddendum: JavaAddendum?,
+  ) =
     if (name.isEmpty()) null
     else JavaModule(
       genericModuleInfo = GenericModuleInfo(
@@ -57,21 +66,21 @@ public class JavaModuleToDummyJavaModulesTransformerHACK(private val projectBase
       moduleLevelLibraries = listOf(),
       jvmJdkName = jdkName,
       kotlinAddendum = null,
+      javaAddendum = javaAddendum,
     )
+}
 
-  private fun calculateDummyJavaSourceRoots(inputEntity: JavaModule): List<Path> =
-    inputEntity.sourceRoots.map {
-      restoreSourceRootFromPackagePrefix(it)
-    }.distinct()
+internal fun calculateDummyJavaSourceRoots(sourceRoots: List<JavaSourceRoot>): List<Path> =
+  sourceRoots.mapNotNull {
+    restoreSourceRootFromPackagePrefix(it)
+  }.distinct()
 
-  private fun restoreSourceRootFromPackagePrefix(sourceRoot: JavaSourceRoot): Path {
-    val packagePrefixPath = sourceRoot.packagePrefix.replace('.', File.separatorChar)
-    val directory =
-      if (sourceRoot.sourcePath.isDirectory()) sourceRoot.sourcePath
-      else sourceRoot.sourcePath.parent
-    val sourceRootString = directory.pathString.removeSuffix(packagePrefixPath)
-    return Path(sourceRootString)
-  }
+private fun restoreSourceRootFromPackagePrefix(sourceRoot: JavaSourceRoot): Path? {
+  if (sourceRoot.sourcePath.isDirectory()) return null
+  val packagePrefixPath = sourceRoot.packagePrefix.replace('.', File.separatorChar)
+  val directory = sourceRoot.sourcePath.parent
+  val sourceRootString = directory.pathString.removeSuffix(packagePrefixPath)
+  return Path(sourceRootString)
 }
 
 internal fun calculateDummyJavaModuleNames(
@@ -86,5 +95,7 @@ internal fun calculateDummyJavaModuleName(sourceRoot: Path, projectBasePath: Pat
   return absoluteSourceRoot
     .substringAfter(absoluteProjectBasePath)
     .trim { it == File.separatorChar }
+    .replaceDots()
     .replace(File.separator, ".")
+    .shortenTargetPath()
 }

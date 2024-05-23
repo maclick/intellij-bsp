@@ -1,10 +1,11 @@
 package org.jetbrains.plugins.bsp.ui.widgets.document.targets
 
-import ch.epfl.scala.bsp4j.TextDocumentIdentifier
+import ch.epfl.scala.bsp4j.BuildTargetIdentifier
 import com.intellij.openapi.actionSystem.ActionGroup
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
@@ -14,24 +15,20 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.openapi.wm.impl.status.EditorBasedStatusBarPopup
+import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
 import org.jetbrains.plugins.bsp.assets.BuildToolAssetsExtension
 import org.jetbrains.plugins.bsp.config.BspPluginBundle
 import org.jetbrains.plugins.bsp.config.buildToolId
 import org.jetbrains.plugins.bsp.config.isBspProject
 import org.jetbrains.plugins.bsp.extension.points.withBuildToolIdOrDefault
-import org.jetbrains.plugins.bsp.magicmetamodel.DocumentTargetsDetails
-import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
-import org.jetbrains.plugins.bsp.services.MagicMetaModelService
-import org.jetbrains.plugins.bsp.ui.actions.LoadTargetAction
+import org.jetbrains.plugins.bsp.target.temporaryTargetUtils
 import javax.swing.Icon
 
 private const val ID = "BspDocumentTargetsWidget"
 
 public class BspDocumentTargetsWidget(project: Project) : EditorBasedStatusBarPopup(project, false) {
-  private val magicMetaModelService = MagicMetaModelService.getInstance(project)
-
   init {
-    magicMetaModelService.value.registerTargetLoadListener { update(); }
+    project.temporaryTargetUtils.registerListener { update() }
   }
 
   override fun ID(): String = ID
@@ -43,13 +40,9 @@ public class BspDocumentTargetsWidget(project: Project) : EditorBasedStatusBarPo
   }
 
   private fun activeWidgetStateIfIncludedInAnyTargetOrInactiveState(file: VirtualFile, icon: Icon): WidgetState {
-    val documentDetails = getDocumentDetails(file)
-    return when {
-      documentDetails == null -> inactiveWidgetState(icon)
-      documentDetails.loadedTargetId == null && documentDetails.notLoadedTargetsIds.isEmpty() ->
-        inactiveWidgetState(icon)
-      else -> activeWidgetState(documentDetails.loadedTargetId, icon)
-    }
+    val targets = project.temporaryTargetUtils.getTargetsForFile(file)
+    return if (targets.isEmpty()) inactiveWidgetState(icon)
+    else activeWidgetState(targets.firstOrNull(), icon)
   }
 
   private fun inactiveWidgetState(icon: Icon): WidgetState {
@@ -59,8 +52,8 @@ public class BspDocumentTargetsWidget(project: Project) : EditorBasedStatusBarPo
     return state
   }
 
-  private fun activeWidgetState(loadedTarget: BuildTargetId?, icon: Icon): WidgetState {
-    val text = loadedTarget ?: ""
+  private fun activeWidgetState(loadedTarget: BuildTargetIdentifier?, icon: Icon): WidgetState {
+    val text = loadedTarget?.uri ?: ""
     val state = WidgetState(BspPluginBundle.message("widget.tooltip.text.active"), text, true)
     state.icon = icon
 
@@ -77,50 +70,11 @@ public class BspDocumentTargetsWidget(project: Project) : EditorBasedStatusBarPo
   }
 
   private fun calculatePopupGroup(file: VirtualFile): ActionGroup {
-    val documentDetails = getDocumentDetails(file)
+    val targets = project.temporaryTargetUtils.getTargetsForFile(file)
 
     val group = DefaultActionGroup()
-    if (documentDetails != null) {
-      updateActionGroupWithCurrentlyLoadedTarget(group, documentDetails.loadedTargetId)
-      updateActionGroupWithAvailableTargetsSection(group, documentDetails.notLoadedTargetsIds)
-    }
     return group
   }
-
-  private fun updateActionGroupWithCurrentlyLoadedTarget(
-    group: DefaultActionGroup,
-    loadedTarget: BuildTargetId?,
-  ) {
-    group.addSeparator(BspPluginBundle.message("widget.loaded.target.separator.title"))
-
-    if (loadedTarget != null) {
-      group.addAction(
-        LoadTargetAction(
-          targetId = loadedTarget,
-          text = { loadedTarget },
-        ) { update() }
-      )
-    }
-  }
-
-  private fun updateActionGroupWithAvailableTargetsSection(
-    group: DefaultActionGroup,
-    notLoadedTargetsIds: List<BuildTargetId>,
-  ) {
-    group.addSeparator(BspPluginBundle.message("widget.available.targets.to.load"))
-    val actions = notLoadedTargetsIds.map {
-      LoadTargetAction(
-        targetId = it,
-        text = { it },
-      ) { update() } }
-    group.addAll(actions)
-  }
-
-  private fun getDocumentDetails(file: VirtualFile): DocumentTargetsDetails? =
-    // Could be also "jar"
-    if (file.url.startsWith("file://"))
-      magicMetaModelService.value.getTargetsDetailsForDocument(TextDocumentIdentifier(file.url))
-    else null
 
   override fun createInstance(project: Project): StatusBarWidget =
     BspDocumentTargetsWidget(project)
@@ -144,4 +98,9 @@ public class BspDocumentTargetsWidgetFactory : StatusBarWidgetFactory {
 
   override fun canBeEnabledOn(statusBar: StatusBar): Boolean =
     true
+}
+
+internal fun Project.updateBspDocumentTargetsWidget() {
+  val statusBarWidgetsManager = service<StatusBarWidgetsManager>()
+  statusBarWidgetsManager.updateWidget(BspDocumentTargetsWidgetFactory())
 }

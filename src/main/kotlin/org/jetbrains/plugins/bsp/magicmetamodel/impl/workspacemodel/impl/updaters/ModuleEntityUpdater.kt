@@ -42,11 +42,16 @@ internal class ModuleEntityUpdater(
     val modulesDependencies = entityToAdd.modulesDependencies.map { toModuleDependencyItemModuleDependency(it) }
     val associatesDependencies = entityToAdd.associates.map { toModuleDependencyItemModuleDependency(it) }
     val librariesDependencies =
-      entityToAdd.librariesDependencies.map { toModuleDependencyItemLibraryDependency(it, entityToAdd.name) }
+      entityToAdd.librariesDependencies.map { toLibraryDependency(it) }
+
+    // library dependencies should be included before module dependencies
+    // to handle the case of overridden library versions
+    val dependencies = defaultDependencies + librariesDependencies + modulesDependencies + associatesDependencies
+
     val moduleEntity = builder.addEntity(
       ModuleEntity(
         name = entityToAdd.name,
-        dependencies = defaultDependencies + modulesDependencies + associatesDependencies + librariesDependencies,
+        dependencies = dependencies,
         entitySource = toEntitySource(entityToAdd),
       ) {
         this.type = entityToAdd.type
@@ -90,21 +95,15 @@ internal class ModuleEntityUpdater(
     )
 }
 
-internal fun toModuleDependencyItemLibraryDependency(
-  intermediateLibraryDependency: IntermediateLibraryDependency,
-  moduleName: String,
-): LibraryDependency {
-  val libraryTableId = if (intermediateLibraryDependency.isProjectLevelLibrary)
-    LibraryTableId.ProjectLibraryTableId else LibraryTableId.ModuleLibraryTableId(ModuleId(moduleName))
-  return LibraryDependency(
+internal fun toLibraryDependency(intermediateLibraryDependency: IntermediateLibraryDependency): LibraryDependency =
+  LibraryDependency(
     library = LibraryId(
       name = intermediateLibraryDependency.libraryName,
-      tableId = libraryTableId,
+      tableId = LibraryTableId.ProjectLibraryTableId, // treat all libraries as project-level libraries
     ),
     exported = true, // TODO https://youtrack.jetbrains.com/issue/BAZEL-632
     scope = DependencyScope.COMPILE,
   )
-}
 
 internal class WorkspaceModuleRemover(
   private val workspaceModelEntityUpdaterConfig: WorkspaceModelEntityUpdaterConfig,
