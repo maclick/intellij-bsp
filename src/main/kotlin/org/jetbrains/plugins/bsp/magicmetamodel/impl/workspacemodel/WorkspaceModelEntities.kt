@@ -4,6 +4,7 @@ import ch.epfl.scala.bsp4j.BuildTarget
 import ch.epfl.scala.bsp4j.BuildTargetCapabilities
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.ModuleState
 import org.jetbrains.plugins.bsp.utils.safeCastToURI
+import java.net.URI
 import java.nio.file.Path
 
 public data class BuildTargetInfo(

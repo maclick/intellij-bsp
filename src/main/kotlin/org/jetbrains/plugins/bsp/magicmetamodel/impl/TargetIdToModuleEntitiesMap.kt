@@ -43,6 +43,7 @@ public object TargetIdToModuleEntitiesMap {
       targetsMap,
       projectDetails,
       moduleNameProvider,
+      libraryNameProvider,
       projectBasePath,
     )
 
