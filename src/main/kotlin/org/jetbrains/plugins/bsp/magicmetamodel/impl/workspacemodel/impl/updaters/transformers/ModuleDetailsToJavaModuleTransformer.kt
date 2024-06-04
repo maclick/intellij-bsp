@@ -1,13 +1,11 @@
 package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.updaters.transformers
 
-import ch.epfl.scala.bsp4j.BuildTargetIdentifier
 import ch.epfl.scala.bsp4j.JvmBuildTarget
 import org.jetbrains.bsp.protocol.utils.extractAndroidBuildTarget
 import org.jetbrains.bsp.protocol.utils.extractJvmBuildTarget
 import org.jetbrains.bsp.protocol.utils.extractKotlinBuildTarget
 import org.jetbrains.bsp.protocol.utils.extractScalaBuildTarget
-import org.jetbrains.kotlin.daemon.common.toHexString
-import org.jetbrains.plugins.bsp.magicmetamodel.ModuleNameProvider
+import org.jetbrains.plugins.bsp.magicmetamodel.TargetNameReformatProvider
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.AndroidAddendum
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
@@ -15,50 +13,35 @@ import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericModul
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.IntermediateModuleDependency
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaAddendum
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaModule
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.JavaSourceRoot
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.KotlinAddendum
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ModuleDetails
+import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ResourceRoot
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ScalaAddendum
-import java.net.URI
+import org.jetbrains.plugins.bsp.utils.StringUtils
+import org.jetbrains.plugins.bsp.utils.safeCastToURI
 import java.nio.file.Path
-import java.security.MessageDigest
 import kotlin.io.path.name
 import kotlin.io.path.toPath
 
-public data class KotlinBuildTarget(
-  val languageVersion: String,
-  val apiVersion: String,
-  val kotlincOptions: List<String>,
-  val associates: List<BuildTargetIdentifier>,
-  var jvmBuildTarget: JvmBuildTarget? = null,
-)
-
 internal class ModuleDetailsToJavaModuleTransformer(
   targetsMap: Map<BuildTargetId, BuildTargetInfo>,
-  moduleNameProvider: ModuleNameProvider,
+  moduleNameProvider: TargetNameReformatProvider,
+  libraryNameProvider: TargetNameReformatProvider,
   private val projectBasePath: Path,
   private val isAndroidSupportEnabled: Boolean = false,
-) : ModuleDetailsToModuleTransformer<JavaModule>(targetsMap, moduleNameProvider) {
+) : ModuleDetailsToModuleTransformer<JavaModule>(targetsMap, moduleNameProvider, libraryNameProvider) {
   override val type = "JAVA_MODULE"
 
-  private val sourcesItemToJavaSourceRootTransformer = SourcesItemToJavaSourceRootTransformer(projectBasePath)
-  private val resourcesItemToJavaResourceRootTransformer = ResourcesItemToJavaResourceRootTransformer(projectBasePath)
+  private val sourcesItemToJavaSourceRootTransformer = SourcesItemToJavaSourceRootTransformer()
+  private val resourcesItemToJavaResourceRootTransformer = ResourcesItemToJavaResourceRootTransformer()
 
   override fun transform(inputEntity: ModuleDetails): JavaModule =
     JavaModule(
       genericModuleInfo = toGenericModuleInfo(inputEntity),
       baseDirContentRoot = toBaseDirContentRoot(inputEntity),
-      sourceRoots = sourcesItemToJavaSourceRootTransformer.transform(inputEntity.sources.map {
-        BuildTargetAndSourceItem(
-          inputEntity.target,
-          it,
-        )
-      }),
-      resourceRoots = resourcesItemToJavaResourceRootTransformer.transform(inputEntity.resources.map {
-        BuildTargetAndResourcesItem(
-          inputEntity.target,
-          it,
-        )
-      }),
+      sourceRoots = toJavaSourceRoots(inputEntity),
+      resourceRoots = toResourceRoots(inputEntity),
       moduleLevelLibraries = if (inputEntity.libraryDependencies == null)
         DependencySourcesItemToLibraryTransformer
           .transform(inputEntity.dependenciesSources.map {
@@ -66,12 +49,28 @@ internal class ModuleDetailsToJavaModuleTransformer(
           }) else null,
       // Any java module must be assigned a jdk if there is any available.
       jvmJdkName = inputEntity.toJdkNameOrDefault(),
-      jvmBinaryJars = inputEntity.jvmBinaryJars.flatMap { it.jars }.map { URI.create(it).toPath() },
+      jvmBinaryJars = inputEntity.jvmBinaryJars.flatMap { it.jars }.map { it.safeCastToURI().toPath() },
       kotlinAddendum = toKotlinAddendum(inputEntity),
       scalaAddendum = toScalaAddendum(inputEntity),
       javaAddendum = toJavaAddendum(inputEntity),
       androidAddendum = if (isAndroidSupportEnabled) toAndroidAddendum(inputEntity) else null,
     )
+
+  private fun toJavaSourceRoots(inputEntity: ModuleDetails): List<JavaSourceRoot> =
+    sourcesItemToJavaSourceRootTransformer.transform(inputEntity.sources.map {
+      BuildTargetAndSourceItem(
+        buildTarget = inputEntity.target,
+        sourcesItem = it,
+      )
+    })
+
+  private fun toResourceRoots(inputEntity: ModuleDetails): List<ResourceRoot> =
+    resourcesItemToJavaResourceRootTransformer.transform(inputEntity.resources.map {
+      BuildTargetAndResourcesItem(
+        buildTarget = inputEntity.target,
+        resourcesItem = it,
+      )
+    })
 
   private fun ModuleDetails.toJvmClassPaths() =
     (this.javacOptions?.classpath.orEmpty() + this.scalacOptions?.classpath.orEmpty()).distinct()
@@ -94,14 +93,11 @@ internal class ModuleDetailsToJavaModuleTransformer(
 
   private fun GenericModuleInfo.applyHACK(inputEntity: ModuleDetails, projectBasePath: Path): GenericModuleInfo {
     val dummyJavaModuleDependencies =
-      calculateDummyJavaModuleNames(inputEntity.calculateDummyJavaSourceRoots(), projectBasePath)
+      calculateDummyJavaModuleNames(calculateDummyJavaSourceRoots(toJavaSourceRoots(inputEntity)), projectBasePath)
         .filter { it.isNotEmpty() }
         .map { IntermediateModuleDependency(it) }
     return this.copy(modulesDependencies = modulesDependencies + dummyJavaModuleDependencies)
   }
-
-  private fun ModuleDetails.calculateDummyJavaSourceRoots(): List<Path> =
-    sources.mapNotNull { it.roots }.flatten().map { URI.create(it) }.map { it.toPath() }
 
   private fun ModuleDetails.toJdkNameOrDefault(): String? =
     toJdkName() ?: defaultJdkName
@@ -141,8 +137,10 @@ internal class ModuleDetailsToJavaModuleTransformer(
       AndroidAddendum(
         androidSdkName = androidJar.androidJarToAndroidSdkName(),
         androidTargetType = androidTargetType,
-        manifest = manifest?.let { URI.create(it).toPath() },
-        resourceFolders = resourceFolders.map { URI.create(it).toPath() },
+        manifest = manifest?.safeCastToURI()?.toPath(),
+        resourceDirectories = resourceDirectories.map { it.safeCastToURI().toPath() },
+        resourceJavaPackage = resourceJavaPackage,
+        assetsDirectories = assetsDirectories.map { it.safeCastToURI().toPath() },
       )
     }
   }
@@ -160,12 +158,6 @@ public fun String.scalaVersionToScalaSdkName(): String = "scala-sdk-$this"
 public fun String.projectNameToBaseJdkName(): String = "$this-jdk"
 
 public fun String.projectNameToJdkName(javaHomeUri: String): String =
-  projectNameToBaseJdkName() + "-" + javaHomeUri.md5Hash()
+  projectNameToBaseJdkName() + "-" + StringUtils.md5Hash(javaHomeUri, 5)
 
-public fun String.androidJarToAndroidSdkName(): String = "android-sdk-" + this.md5Hash()
-
-private fun String.md5Hash(): String {
-  val md = MessageDigest.getInstance("MD5")
-  val hash = md.digest(this.toByteArray())
-  return hash.toHexString().substring(0, 5)
-}
+public fun String.androidJarToAndroidSdkName(): String = "android-sdk-" + StringUtils.md5Hash(this, 5)

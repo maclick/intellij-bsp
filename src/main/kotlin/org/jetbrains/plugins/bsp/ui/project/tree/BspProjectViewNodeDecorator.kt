@@ -5,47 +5,13 @@ import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ProjectViewNodeDecorator
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.platform.backend.workspace.WorkspaceModel
-import com.intellij.platform.backend.workspace.virtualFile
 import com.intellij.ui.SimpleTextAttributes
-import org.jetbrains.plugins.bsp.assets.BuildToolAssetsExtension
-import org.jetbrains.plugins.bsp.config.buildToolId
+import org.jetbrains.plugins.bsp.assets.assets
 import org.jetbrains.plugins.bsp.config.isBspProject
-import org.jetbrains.plugins.bsp.extension.points.withBuildToolIdOrDefault
-import org.jetbrains.plugins.bsp.services.MagicMetaModelService
-import javax.swing.Icon
+import org.jetbrains.plugins.bsp.config.rootDir
+import org.jetbrains.plugins.bsp.target.temporaryTargetUtils
 
 public class BspProjectViewNodeDecorator(private val project: Project) : ProjectViewNodeDecorator {
-  private var loadedModulesBaseDirectories: Set<VirtualFile> = emptySet()
-
-  private lateinit var buildToolIcon: Icon
-
-  init {
-    if (project.isBspProject) {
-      loadedModulesBaseDirectories = calculateAllTargetsBaseDirectories()
-
-      val magicMetaModel = MagicMetaModelService.getInstance(project).value
-      magicMetaModel.registerTargetLoadListener {
-        loadedModulesBaseDirectories = calculateAllTargetsBaseDirectories()
-      }
-
-      val assetsExtension = BuildToolAssetsExtension.ep.withBuildToolIdOrDefault(project.buildToolId)
-      buildToolIcon = assetsExtension.icon
-    }
-  }
-
-  private fun calculateAllTargetsBaseDirectories(): Set<VirtualFile> {
-    val magicMetaModel = MagicMetaModelService.getInstance(project).value
-    val virtualFileUrlManager = WorkspaceModel.getInstance(project).getVirtualFileUrlManager()
-
-    return magicMetaModel.getAllLoadedTargets()
-      .mapNotNull { it.baseDirectory }
-      .map { virtualFileUrlManager.getOrCreateFromUri(it) }
-      .mapNotNull { it.virtualFile }
-      .toSet()
-  }
-
   override fun decorate(node: ProjectViewNode<*>, data: PresentationData) {
     if (project.isBspProject) {
       decorateForBsp(node, data)
@@ -60,17 +26,21 @@ public class BspProjectViewNodeDecorator(private val project: Project) : Project
   }
 
   private fun decorateIfBspTarget(node: PsiDirectoryNode, data: PresentationData) {
-    if (node.isBspModule()) {
-      data.addIconAndHighlight()
+    when {
+      node.isRootModule() -> data.addIconAndHighlight(node.virtualFile?.name)
+      node.isBspModule() -> data.addIconAndHighlight(data.presentableText)
     }
   }
 
-  private fun PsiDirectoryNode.isBspModule(): Boolean =
-    loadedModulesBaseDirectories.contains(virtualFile)
+  private fun PsiDirectoryNode.isRootModule(): Boolean =
+    project.rootDir == virtualFile
 
-  private fun PresentationData.addIconAndHighlight() {
-    setIcon(buildToolIcon)
-    addText(presentableText, SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
+  private fun PsiDirectoryNode.isBspModule(): Boolean =
+    virtualFile?.let { project.temporaryTargetUtils.isBaseDir(it) } == true
+
+  private fun PresentationData.addIconAndHighlight(text: String?) {
+    setIcon(project.assets.icon)
+    addText(text, SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
   }
 
   private fun PresentationData.removeJavaHackSourceRoot() {

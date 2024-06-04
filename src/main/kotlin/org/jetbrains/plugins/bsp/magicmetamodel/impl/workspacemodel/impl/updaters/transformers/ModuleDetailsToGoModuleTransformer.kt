@@ -2,7 +2,7 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.update
 
 import ch.epfl.scala.bsp4j.BuildTarget
 import org.jetbrains.bsp.protocol.utils.extractGoBuildTarget
-import org.jetbrains.plugins.bsp.magicmetamodel.ModuleNameProvider
+import org.jetbrains.plugins.bsp.magicmetamodel.TargetNameReformatProvider
 import org.jetbrains.plugins.bsp.magicmetamodel.ProjectDetails
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
@@ -18,9 +18,10 @@ import kotlin.io.path.toPath
 internal class ModuleDetailsToGoModuleTransformer(
   private val targetsMap: Map<BuildTargetId, BuildTargetInfo>,
   private val projectDetails: ProjectDetails,
-  moduleNameProvider: ModuleNameProvider,
+  moduleNameProvider: TargetNameReformatProvider,
+  libraryNameProvider: TargetNameReformatProvider,
   projectBasePath: Path,
-) : ModuleDetailsToModuleTransformer<GoModule>(targetsMap, moduleNameProvider) {
+) : ModuleDetailsToModuleTransformer<GoModule>(targetsMap, moduleNameProvider, libraryNameProvider) {
   override val type = "WEB_MODULE"
 
   private val sourcesItemToGoSourceRootTransformer = SourcesItemToGoSourceRootTransformer(projectBasePath)

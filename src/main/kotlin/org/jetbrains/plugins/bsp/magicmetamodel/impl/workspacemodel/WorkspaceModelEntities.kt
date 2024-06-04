@@ -3,6 +3,7 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel
 import ch.epfl.scala.bsp4j.BuildTarget
 import ch.epfl.scala.bsp4j.BuildTargetCapabilities
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.ModuleState
+import org.jetbrains.plugins.bsp.utils.safeCastToURI
 import java.net.URI
 import java.nio.file.Path
 
@@ -59,7 +60,7 @@ public data class Library(
   public companion object {
     public fun formatJarString(jar: String): String =
       if (jar.endsWith(".jar")) {
-        "jar://${URI.create(jar).path}!/"
+        "jar://${jar.safeCastToURI().path}!/"
       } else {
         // There can be other library roots except for jars, e.g., Android resources. Use the file:// scheme then.
         jar

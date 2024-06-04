@@ -1,27 +1,20 @@
 package org.jetbrains.plugins.bsp.ui.gutters
 
-import ch.epfl.scala.bsp4j.TextDocumentIdentifier
-import com.goide.GoFileElement
 import com.goide.psi.GoFile
-import com.goide.psi.GoInternedLeafTokenType
 import com.goide.psi.impl.GoFunctionDeclarationImpl
 import com.intellij.execution.lineMarker.RunLineMarkerContributor
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.Separator
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.PsiNameIdentifierOwner
-import com.intellij.psi.impl.source.tree.LeafPsiElement
-import org.jetbrains.kotlin.idea.codeinsight.utils.invertedComparison
-import org.jetbrains.kotlin.idea.util.CommentSaver.Companion.tokenType
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.plugins.bsp.config.isBspProject
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
-import org.jetbrains.plugins.bsp.services.MagicMetaModelService
+import org.jetbrains.plugins.bsp.target.temporaryTargetUtils
 import org.jetbrains.plugins.bsp.ui.widgets.tool.window.utils.fillWithEligibleActions
 
 private class BspLineMakerInfo(text: String, actions: List<AnAction>) :
@@ -51,31 +44,18 @@ public class BspJVMRunLineMarkerContributor : RunLineMarkerContributor() {
     this is KtClassOrObject || this is KtNamedFunction || this is PsiClass || this is PsiMethod
 
   private fun PsiElement.calculateLineMarkerInfo(): Info? =
-    containingFile.virtualFile?.url?.let { url ->
-      val magicMetaModel = MagicMetaModelService.getInstance(project).value
-      val documentId = TextDocumentIdentifier(url)
-      val documentTargetDetails = magicMetaModel.getTargetsDetailsForDocument(documentId)
-      val targetsMap = magicMetaModel.facade.targets
-      val loadedTargetInfo = documentTargetDetails.loadedTargetId?.let { targetsMap[it] }
-      val notLoadedTargetInfos = documentTargetDetails.notLoadedTargetsIds.mapNotNull { targetsMap[it] }
-      calculateLineMarkerInfo(loadedTargetInfo, notLoadedTargetInfos)
+    containingFile.virtualFile?.let { url ->
+      val temporaryTargetUtils = project.temporaryTargetUtils
+      val targetInfos = temporaryTargetUtils.getTargetsForFile(url)
+        .mapNotNull { temporaryTargetUtils.getBuildTargetInfoForId(it) }
+      calculateLineMarkerInfo(targetInfos)
     }
 
-  private fun calculateLineMarkerInfo(
-    loadedTargetInfo: BuildTargetInfo?,
-    notLoadedTargetInfos: List<BuildTargetInfo>,
-  ): Info =
+  private fun calculateLineMarkerInfo(targetInfos: List<BuildTargetInfo>): Info =
     BspLineMakerInfo(
       text = "Run",
-      actions = calculateEligibleActionsForTargets(loadedTargetInfo, notLoadedTargetInfos)
+      actions = targetInfos.flatMap { it.calculateEligibleActions() }
     )
-
-  private fun calculateEligibleActionsForTargets(
-    loadedTargetInfo: BuildTargetInfo?,
-    notLoadedTargetInfos: List<BuildTargetInfo>,
-  ) = loadedTargetInfo.calculateEligibleActions() +
-    Separator() +
-    notLoadedTargetInfos.flatMap { it.calculateEligibleActions() }
 
   private fun BuildTargetInfo?.calculateEligibleActions(): List<AnAction> =
     if (this == null) emptyList()

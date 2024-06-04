@@ -2,26 +2,25 @@ package org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.impl.update
 
 import ch.epfl.scala.bsp4j.PythonBuildTarget
 import org.jetbrains.bsp.protocol.utils.extractPythonBuildTarget
-import org.jetbrains.plugins.bsp.magicmetamodel.ModuleNameProvider
+import org.jetbrains.plugins.bsp.magicmetamodel.TargetNameReformatProvider
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetId
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.BuildTargetInfo
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.GenericModuleInfo
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.ModuleDetails
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonModule
 import org.jetbrains.plugins.bsp.magicmetamodel.impl.workspacemodel.PythonSdkInfo
-import java.nio.file.Path
 
 internal class ModuleDetailsToPythonModuleTransformer(
   targetsMap: Map<BuildTargetId, BuildTargetInfo>,
-  moduleNameProvider: ModuleNameProvider,
-  projectBasePath: Path,
+  moduleNameProvider: TargetNameReformatProvider,
+  libraryNameProvider: TargetNameReformatProvider,
   private val hasDefaultPythonInterpreter: Boolean,
-) : ModuleDetailsToModuleTransformer<PythonModule>(targetsMap, moduleNameProvider) {
+) : ModuleDetailsToModuleTransformer<PythonModule>(targetsMap, moduleNameProvider, libraryNameProvider) {
   override val type = "PYTHON_MODULE"
 
-  private val sourcesItemToPythonSourceRootTransformer = SourcesItemToPythonSourceRootTransformer(projectBasePath)
+  private val sourcesItemToPythonSourceRootTransformer = SourcesItemToPythonSourceRootTransformer()
   private val resourcesItemToPythonResourceRootTransformer =
-    ResourcesItemToPythonResourceRootTransformer(projectBasePath)
+    ResourcesItemToPythonResourceRootTransformer()
 
   override fun transform(inputEntity: ModuleDetails): PythonModule =
     PythonModule(
