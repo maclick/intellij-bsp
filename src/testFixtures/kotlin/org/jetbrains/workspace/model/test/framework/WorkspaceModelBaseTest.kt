@@ -151,3 +151,6 @@ public abstract class WorkspaceModelWithParentJavaModuleBaseTest : WorkspaceMode
 public abstract class WorkspaceModelWithParentPythonModuleBaseTest : WorkspaceModelWithParentModuleBaseTest() {
   override val parentModuleType: String = "PYTHON_MODULE"
 }
+public abstract class WorkspaceModelWithParentGoModuleBaseTest : WorkspaceModelWithParentModuleBaseTest() {
+  override val parentModuleType: String = "WEB_MODULE"
+}

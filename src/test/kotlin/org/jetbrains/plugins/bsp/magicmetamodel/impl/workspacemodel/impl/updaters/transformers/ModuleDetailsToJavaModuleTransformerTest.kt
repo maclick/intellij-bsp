@@ -165,6 +165,7 @@ class ModuleDetailsToJavaModuleTransformerTest {
       ),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     val targetsMap = listOf(buildTargetId.uri, "module2", "module3").toDefaultTargetsMap()
@@ -312,6 +313,7 @@ class ModuleDetailsToJavaModuleTransformerTest {
       ),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     val targetsMap = listOf(buildTargetId.uri, "module2", "module3").toDefaultTargetsMap()
@@ -456,6 +458,7 @@ class ModuleDetailsToJavaModuleTransformerTest {
       ),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     val module2Root = createTempDirectory(projectBasePath, "module2").toAbsolutePath()
@@ -522,6 +525,7 @@ class ModuleDetailsToJavaModuleTransformerTest {
       ),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     val modulesDetails = listOf(moduleDetails1, moduleDetails2)

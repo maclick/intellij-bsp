@@ -60,6 +60,7 @@ class ProjectDetailsToModuleDetailsTransformerTest {
       moduleDependencies = emptyList(),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     actualModuleDetails shouldBe expectedModuleDetails
@@ -131,6 +132,7 @@ class ProjectDetailsToModuleDetailsTransformerTest {
       moduleDependencies = emptyList(),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     actualModuleDetails shouldBe expectedModuleDetails
@@ -267,6 +269,7 @@ class ProjectDetailsToModuleDetailsTransformerTest {
       moduleDependencies = listOf(target2Id.uri),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
     val expectedModuleDetails2 = ModuleDetails(
       target = target2,
@@ -281,6 +284,7 @@ class ProjectDetailsToModuleDetailsTransformerTest {
       moduleDependencies = emptyList(),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
     val expectedModuleDetails3 = ModuleDetails(
       target = target3,
@@ -295,6 +299,7 @@ class ProjectDetailsToModuleDetailsTransformerTest {
       moduleDependencies = listOf(target2Id.uri),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
     val expectedModuleDetails4 = ModuleDetails(
       target = target4,
@@ -309,6 +314,7 @@ class ProjectDetailsToModuleDetailsTransformerTest {
       moduleDependencies = listOf(target1Id.uri),
       defaultJdkName = null,
       jvmBinaryJars = emptyList(),
+      goLibraries = emptyList()
     )
 
     actualModuleDetails1 shouldBe expectedModuleDetails1
